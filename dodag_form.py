@@ -1,13 +1,15 @@
 import time
-
+#import gym
 import argparse
-
+#import ns3gym
+#ßfrom ns3gym import ns3env
 from functools import partial
-
+#from trickleTimer import trickleTimer
+#from gym import spaces
 import numpy as np
 import math
 import random
-
+#from matplotlib import pyplot as plt
 
 INFINITE_RANK = 0xffff
 DEFAULT_MIN_HOP_RANK_INCREASE = 256
@@ -550,9 +552,17 @@ def modify(nodes, routing_table,threshold,node1):
     print(trust)      
     #sort out the trust scores
     index = np.array(trust).argmin()
-        
+    node =nodes[index]   
     while (1):
     #delete the node with least trust
+        i =1
+        next_hop = routing_table[node][1][i]
+        while(next_hop):
+            child.append(next_hop)
+            i = i+1
+            next_hop = routing_table[node][1][i]
+
+        adjust_routing_table(child,routing_table)
         self.delete(trust,nodes,index)
         
         flag = self.check_normalized_trust(trust,threshold)
@@ -564,7 +574,12 @@ def delete(trust,nodes, index):
     nodes = nodes.pop(index)
         
 
-            
+def adjust_routing_table(child, routing_table,node):
+    new_parent = node.parent
+    for child in child:
+        child.parent = new_parent
+
+    routing_table[new_parent].append(routing_table[child])
 
 def check_normalized_trust(trust,threshold):
     tot = 0
