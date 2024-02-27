@@ -1,15 +1,13 @@
 import time
-import gym
+
 import argparse
-import ns3gym
-from ns3gym import ns3env
+
 from functools import partial
-from trickleTimer import trickleTimer
-from gym import spaces
+
 import numpy as np
 import math
 import random
-from matplotlib import pyplot as plt
+
 
 INFINITE_RANK = 0xffff
 DEFAULT_MIN_HOP_RANK_INCREASE = 256
@@ -120,7 +118,10 @@ class RPLNode:
         if iface and destination:
             self.interfaces[iface].send(destination, dio_message)
         else:
-            self.dio_broadcast(dio_message,node,env,nodes,episode,num_episode,routing_table,s)
+            for i in range(5):
+                trickle_timer()
+                self.dio_broadcast(dio_message,node,env,nodes,episode,num_episode,routing_table,s)
+                i = i+1
 
         if not self.is_dodag_root and not dodag_shutdown:
             self.set_dao_timer()
@@ -312,6 +313,7 @@ class RPLNode:
         #print("The dodag node that wants to send message",node_id.node_id)
         #print("destination",destination.node_id)
         #print("self.routing_table", routing_table)
+        
         if destination.node_id in routing_table[node_id.node_id]:
             #print("Destination routing table:",routing_table[destination.node_id])
             next_hop = routing_table[node_id.node_id][destination.node_id][0]
@@ -365,6 +367,8 @@ class RPLNode:
                 
         else:
             print("Malicious node trying to change parents")
+
+   
         
 class MultiAgentEnv:
     def __init__(self, dodag, node, current_node, routing_table):
@@ -400,16 +404,16 @@ class MultiAgentEnv:
     def obtain_trust(self, node_id,routing_table,episode,network_parameter,s):
         t = 0 #weighted trust
         for neighbors in self.routing_table.values():
-            #print("Neighbour for obtaining trust:", neighbors)
-            #print("Node_id: ", node_id)
+            print("Neighbour for obtaining trust:", neighbors)
+            print("Node_id: ", node_id)
             if node_id in neighbors:
                 trust = neighbors[node_id][1]
                 episode = neighbors[node_id][3]
-                #print("Trust:",trust,"Episode:",episode)
+                print("Trust:",trust,"Episode:",episode)
                 weight =  (math.e)**(-network_parameter * (680-episode))  
-                #print("Weight:",weight)
+                print("Weight:",weight)
                 t = t + (weight*trust)
-                #print("Weighted Trust for node:",node_id, "is:",t)
+                print("Weighted Trust for node:",node_id, "is:",t)
                 
             else:
                 t = 1
@@ -531,8 +535,47 @@ def compare_parents(parent1, parent2):
 
     return 0
 
+def trickle_timer():
+    time.sleep(2)
+    
 
+def modify(nodes, routing_table,threshold,node1):
+    trust = []
+    node_no = []
+    i = 0
+    while(nodes):
+        trust.append(routing_table[1][i][1])
+        node_no.append(i)
+        i = i+1
+    print(trust)      
+    #sort out the trust scores
+    index = np.array(trust).argmin()
+        
+    while (1):
+    #delete the node with least trust
+        self.delete(trust,nodes,index)
+        
+        flag = self.check_normalized_trust(trust,threshold)
+        if flag == 1:
+            break
 
+def delete(trust,nodes, index):
+    trust = trust.pop(index)
+    nodes = nodes.pop(index)
+        
+
+            
+
+def check_normalized_trust(trust,threshold):
+    tot = 0
+    for trust in trust:
+        tot = tot + trust
+    avg = tot/len(trust)
+    if avg < threshold:
+        return 0
+    else:
+        return 1
+    
 
 def main():
     routing_table = {}
@@ -542,7 +585,7 @@ def main():
     node2 = RPLNode(node_id=2, dodag_id="dodag1", dodag_version=1, failure_rate= 0.1, routing_table=None)
     node3 = RPLNode(node_id=3, dodag_id="dodag1", dodag_version=1, failure_rate= 0.1, routing_table=None)
     node4 = RPLNode(node_id=4, dodag_id="dodag1", dodag_version=1, failure_rate= 0.1, routing_table=None)
-    
+    trickle_timer() 
     #adding the nodes in a list
     nodes = [node1,node2,node3,node4]
     # Add parents to nodes
@@ -616,6 +659,7 @@ def main():
     node = nodes[3]
     ms = 0
     md = 0
+    threshold = 0.5
     for episode in range(1,num_episode+1):
 #parent node calculates trust
 #creating object of MultiAgentEnv class
@@ -777,8 +821,9 @@ def main():
                 #change the flag value to nodeid
                 flag = node_id
             else:
-                print("The chosen action is dissolve")
-                node_id.dissolve(nodes,routing_table)                  
+                print("The chosen action is modify")
+                #node_id.dissolve(nodes,routing_table)
+                modify(nodes, routing_table,threshold,node1)
                 
                 #create node 1 to 4
                 for node_id in range(1, 5):
