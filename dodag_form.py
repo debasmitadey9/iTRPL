@@ -541,38 +541,20 @@ def trickle_timer():
     time.sleep(2)
     
 
-def modify(nodes, routing_table,threshold,node1):
-    trust = []
-    node_no = []
-    i = 0
-    while(nodes):
-        trust.append(routing_table[1][i][1])
-        node_no.append(i)
-        i = i+1
-    print(trust)      
-    #sort out the trust scores
-    index = np.array(trust).argmin()
-    node =nodes[index]   
-    while (1):
-    #delete the node with least trust
-        i =1
-        next_hop = routing_table[node][1][i]
-        while(next_hop):
-            child.append(next_hop)
-            i = i+1
-            next_hop = routing_table[node][1][i]
-
-        adjust_routing_table(child,routing_table)
-        self.delete(trust,nodes,index)
+def modify(nodes, routing_table,node1):
+    for node in nodes:
+        reward = routing_table[node1.node_id][node.node_id][2]
+        if reward == -1: #checking if the last updated reward is -1
+            child_node = routing_table[node.node_id][node.node_id][0]
+            child_r_table = routing_table[child_node.node_id]
+            parent = parent.node
+            routing_table[parent.node_id].append(child_r_table)
+            self.delete(node,routing_table[node.node_id],nodes)
         
-        flag = self.check_normalized_trust(trust,threshold)
-        if flag == 1:
-            break
 
-def delete(trust,nodes, index):
-    trust = trust.pop(index)
-    nodes = nodes.pop(index)
-        
+def delete(node,routing_table,nodes):
+    routing_table.pop(node.node_id)
+    nodes.remove(node)
 
 def adjust_routing_table(child, routing_table,node):
     new_parent = node.parent
@@ -581,16 +563,6 @@ def adjust_routing_table(child, routing_table,node):
 
     routing_table[new_parent].append(routing_table[child])
 
-def check_normalized_trust(trust,threshold):
-    tot = 0
-    for trust in trust:
-        tot = tot + trust
-    avg = tot/len(trust)
-    if avg < threshold:
-        return 0
-    else:
-        return 1
-    
 
 def main():
     routing_table = {}
@@ -818,12 +790,19 @@ def main():
             print("Q[low_trust][retain]", Q[0][0])
             print("Q[low_trust][dissolve]", Q[0][1])
             print("Q[high_trust][retain]", Q[1][0])
-            print("Q[high_trust][dissolve]", Q[1][1])             
+            print("Q[high_trust][dissolve]", Q[1][1])
             for i in range(2):
                 for j in range(2):
                     if Q[i][j] > maxim:
                         action = j
                         maxim = Q[i][j]
+            epsilon = 0.2
+            value = random.random()
+            if value < epsilon:
+                if action == 0:
+                    action = 1
+                if action == 1:
+                    action = 0
                         
             if action is 0:
                 node_id = nodes.index(node)
@@ -838,7 +817,7 @@ def main():
             else:
                 print("The chosen action is modify")
                 #node_id.dissolve(nodes,routing_table)
-                modify(nodes, routing_table,threshold,node1)
+                modify(nodes, routing_table, node1)
                 
                 #create node 1 to 4
                 for node_id in range(1, 5):
