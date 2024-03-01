@@ -458,7 +458,7 @@ class MultiAgentEnv:
 
         # Return the selected action
         #print("The state of the DODAG:",state)
-        if state>0.7:
+        if state>0.5:
           selected_action = "Join"
 
         else:
@@ -474,7 +474,7 @@ class MultiAgentEnv:
 
      # Q-learning parameters
         alpha = 0.1  # Learning rate
-        gamma = 0.7  # Discount factor
+        gamma = 0.8  # Discount factor
         epsilon = 0.1  # Exploration rate
 
       # Number of episodes
@@ -637,7 +637,7 @@ def main():
 
     flag = 3
     v_flag = 1
-    network_parameter = 0.5
+    network_parameter = 0.05
     ep = 1
     s = {}
     state = {}
